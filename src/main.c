@@ -49,7 +49,7 @@ static uint32_t gettime_ms() {
 
 
 /* Read all of stdin into a buffer. */
-static char *read_stdin(bool normalize) {
+static char *read_stdin() {
 	const size_t block_size = BUFSIZ;
 	size_t num_blocks = 1;
 	size_t buf_size = block_size;
@@ -71,15 +71,6 @@ static char *read_stdin(bool normalize) {
 			}
 			buf[block * block_size + bytes_read] = '\0';
 			break;
-		}
-	}
-	if (normalize) {
-		if (utf8_validate(buf)) {
-			char *tmp = utf8_normalize(buf);
-			free(buf);
-			buf = tmp;
-		} else {
-			log_error("Invalid UTF-8 in stdin.\n");
 		}
 	}
 	return buf;
@@ -1495,7 +1486,10 @@ int main(int argc, char *argv[])
 		log_debug("App list generated.\n");
 	} else {
 		log_debug("Reading stdin.\n");
-		char *buf = read_stdin(!tofi.ascii_input);
+		char *buf = read_stdin();
+		if (!tofi.ascii_input && !utf8_validate(buf)) {
+			log_error("Invalid UTF-8 in stdin.\n");
+		}
 		tofi.window.entry.command_buffer = buf;
 		tofi.window.entry.commands = string_ref_vec_from_buffer(buf);
 		if (tofi.use_history) {
